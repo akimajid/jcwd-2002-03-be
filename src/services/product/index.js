@@ -64,7 +64,6 @@ class productService extends Service {
           },
         ],
       });
-      console.log(findProducts);
       return this.handleSuccess({
         message: "Products found",
         statusCode: 200,
@@ -86,19 +85,40 @@ class productService extends Service {
       });
     }
   };
-  static getProductById = async (req) => {
+  static editNama = async (req) => {
     try {
-      const { id } = req.params;
-      const findProduct = await Product.findByPk(id, {
-        include: {
-          model: Product_image,
-          attributes: ["image_url"],
+      const { username } = req.body;
+      const findUser = await User.findOne({
+        where: {
+          name: username,
         },
       });
+      if (findUser) {
+        return this.handleError({
+          message: "username has been taken",
+          statusCode: 400,
+        });
+      }
+      await User.update(
+        {
+          name: username,
+        },
+        {
+          where: {
+            id: 1,
+          },
+        }
+      );
+      const name = await User.findOne({
+        where: {
+          id: 1,
+        },
+        attributes: ["name"],
+      });
       return this.handleSuccess({
-        message: "Product found successfully",
-        statusCode: 200,
-        data: findProduct,
+        message: "your name was changed successfully",
+        statusCode: 201,
+        data: name,
       });
     } catch (err) {
       console.log(err);
@@ -201,128 +221,105 @@ class productService extends Service {
   static tambahAlamat = async (req) => {
     try {
       const {
-        med_name,
-        no_med,
-        no_bpom,
-        selling_price,
-        discount,
-        indikasi,
-        kandungan,
-        kemasan,
-        category,
+        labelAlamat,
+        nama,
+        nomorHp,
+        provinsi,
+        kotaKabupaten,
+        kecamatan,
+        alamat,
+        kodePos,
+        UserId,
       } = req.body;
-
-      const checkNameRegister = await Product.findOne({
-        where: {
-          med_name,
-        },
+      const address = await Address.create({
+        labelAlamat,
+        nama,
+        nomorHp,
+        provinsi,
+        kotaKabupaten,
+        kecamatan,
+        alamat,
+        kodePos,
+        UserId,
       });
-
-      if (checkNameRegister) {
-        return this.handleError({
-          message: "Product Already Registered",
-          statusCode: 400,
-        });
-      }
-
-      const checkNoMedRegister = await Product.findOne({
-        where: {
-          no_med,
-        },
-      });
-
-      if (checkNoMedRegister) {
-        return this.handleError({
-          message: "No_med already Registered to other Product",
-          statusCode: 400,
-        });
-      }
-      const checkBpomRegister = await Product.findOne({
-        where: {
-          no_med,
-        },
-      });
-
-      if (checkBpomRegister) {
-        return this.handleError({
-          message: "No_bpom already Registered to other Product",
-          statusCode: 400,
-        });
-      }
-
-      const inputProduct = await Product.create({
-        med_name,
-        no_med,
-        no_bpom,
-        selling_price,
-        discount,
-        indikasi,
-        kandungan,
-        kemasan,
-        category,
-      });
-
       return this.handleSuccess({
         message: "your address was added successfully",
         statusCode: 201,
-        data: inputProduct,
+        data: address,
       });
     } catch (err) {
       console.log(err);
-      return this.handleError({});
+      this.handleError({
+        message: "Server Error",
+        statusCode: 500,
+      });
     }
   };
-  static addProductImage = async (req) => {
+  static tambahNomorHp = async (req) => {
     try {
-      const { id } = req.params;
-      const uploadFileDomain = process.env.UPLOAD_FILE_DOMAIN;
-      const filePath = `products`;
-      const selectedFile = req.files;
-      console.log(selectedFile.length);
-
-      if (!selectedFile) {
-        return this.handleError({
-          message: "there's no picture selected",
-          statusCode: 400,
-        });
-      }
-
-      const data = selectedFile.map((val) => {
-        return {
-          ProductId: id,
-          image_url: `${uploadFileDomain}/${filePath}/${val.filename}`,
-        };
-      });
-
-      console.log(data);
-
-      const uploadPicture = await Product_image.bulkCreate(data);
-
-      if (!uploadPicture) {
-        return this.handleError({
-          message: "upload error",
-          statusCode: 400,
-        });
-      }
-
-      return this.handleSuccess({
-        message: "upload success",
-        statusCode: 201,
-      });
-    } catch (err) {
-      console.log(err);
-      return this.handleError({});
-    }
-  };
-  static deleteProduct = async (req) => {
-    try {
-      const { id } = req.params;
-
-      const deleteFile = await Product.destroy({
-        where: {
-          id,
+      const { phone } = req.body;
+      const userPhone = await User.update(
+        {
+          phone,
         },
+        {
+          where: {
+            id: 1,
+          },
+        }
+      );
+      return this.handleSuccess({
+        message: "your phone number was created successfully",
+        statusCode: 201,
+        data: userPhone,
       });
+    } catch (err) {
+      console.log(err);
+      this.handleError({
+        message: "Server Error",
+        statusCode: 500,
+      });
+    }
+  };
+  static getAddress = async (req) => {
+    try {
+      const address = await User.findAndCountAll({
+        where: {
+          id: 1,
+        },
+        include: [
+          {
+            model: Address,
+            attributes: [
+              "labelAlamat",
+              "nama",
+              "nomorHp",
+              "provinsi",
+              "kotaKabupaten",
+              "kecamatan",
+              "alamat",
+              "kodePos",
+              "id",
+            ],
+          },
+        ],
+      });
+      return this.handleSuccess({
+        message: "your address was added successfully",
+        statusCode: 201,
+        data: address.rows,
+      });
+    } catch (err) {
+      console.log(err);
+      this.handleError({
+        message: "Server Error",
+        statusCode: 500,
+      });
+    }
+  };
+  static getProductCategory = async (req) => {
+    try {
+      const findCategory = await Category.findAll();
 
       return this.handleSuccess({
         message: "Get category",
@@ -330,7 +327,6 @@ class productService extends Service {
         data: findCategory,
       });
     } catch (err) {
-      console.log(err);
       console.log(err);
       this.handleError({
         message: "Server Error",
