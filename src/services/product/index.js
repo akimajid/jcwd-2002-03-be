@@ -1,5 +1,13 @@
+
 const Service = require("../service");
-const { Product, Product_image, Category } = require("../../lib/sequelize");
+const {
+  Product,
+  Product_image,
+  Category,
+  Stock_opname,
+  Inventory,
+  Admin,
+} = require("../../lib/sequelize");
 const { Op } = require("sequelize");
 class productService extends Service {
   // npx nodemon . --inspect
@@ -8,7 +16,7 @@ class productService extends Service {
       const {
         _sortBy = "",
         _sortDir = "",
-        _limit = 30,
+        _limit = undefined,
         _page = 1,
         priceMin,
         priceMax,
@@ -62,6 +70,13 @@ class productService extends Service {
             attributes: ["category_name", "id"],
             where: req.query?.categoryId ? { id: req.query.categoryId } : {},
           },
+          {
+            model: Stock_opname,
+            attributes: ["amount"],
+          },
+          {
+            model: Inventory,
+          },
         ],
       });
       return this.handleSuccess({
@@ -87,11 +102,30 @@ class productService extends Service {
   };
   static editNama = async (req) => {
     try {
-      const { username } = req.body;
-      const findUser = await User.findOne({
-        where: {
-          name: username,
-        },
+      const { id } = req.params;
+      const findProduct = await Product.findByPk(id, {
+        include: [
+          {
+            model: Product_image,
+            attributes: ["image_url"],
+          },
+          {
+            model: Inventory,
+            include: [
+              {
+                model: Admin,
+              },
+              {
+                model: Product,
+                include: Stock_opname,
+              },
+            ],
+          },
+          {
+            model: Stock_opname,
+            attributes: ["amount"],
+          },
+        ],
       });
       if (findUser) {
         return this.handleError({
@@ -128,97 +162,7 @@ class productService extends Service {
       });
     }
   };
-  static tambahTl = async (req) => {
-    try {
-      const { birthdate } = req.body;
-      const userBirthdate = await User.update(
-        {
-          birthDate: birthdate,
-        },
-        {
-          where: {
-            id: 1,
-          },
-        }
-      );
-      return this.handleSuccess({
-        message: "your birthdate was added successfully",
-        statusCode: 201,
-        data: userBirthdate,
-      });
-    } catch (err) {
-      console.log(err);
-      this.handleError({
-        message: "Server Error",
-        statusCode: 500,
-      });
-    }
-  };
-  static tambahJk = async (req) => {
-    try {
-      const { gender } = req.body;
-      console.log(gender);
-      const userGender = await User.update(
-        {
-          gender,
-        },
-        {
-          where: {
-            id: 1,
-          },
-        }
-      );
-
-      return this.handleSuccess({
-        message: "your gender was added successfully",
-        statusCode: 201,
-        data: userGender,
-      });
-    } catch (err) {
-      console.log(err);
-      this.handleError({
-        message: "Server Error",
-        statusCode: 500,
-      });
-    }
-  };
-  static editProfilePicture = async (req) => {
-    try {
-      const uploadFileDomain = process.env.UPLOAD_FILE_DOMAIN;
-      const filePath = `profile-pictures`;
-      const { filename } = req.file;
-
-      await User.update(
-        {
-          ...req.body,
-          image_url: `${uploadFileDomain}/${filePath}/${filename}`,
-        },
-        {
-          where: {
-            id: 1,
-          },
-        }
-      );
-      const imageUrl = await User.findOne({
-        where: {
-          id: 1,
-        },
-        attributes: ["image_url"],
-      });
-      return this.handleSuccess({
-        message: "your profile picture was created successfully",
-        statusCode: 201,
-        data: imageUrl,
-      });
-    } catch (err) {
-      console.log(err);
-      this.handleError({
-        message: "Server Error",
-        statusCode: 500,
-      });
-    }
-  };
-  static tambahAlamat = async (req) => {
+  static addProduct = async (req) => {
     try {
       const {
         med_name,
@@ -293,7 +237,7 @@ class productService extends Service {
       });
 
       return this.handleSuccess({
-        message: "your address was added successfully",
+        message: "new product Sucesss",
         statusCode: 201,
         data: result,
       });
@@ -395,12 +339,10 @@ class productService extends Service {
       const findCategory = await Category.findAll();
 
       return this.handleSuccess({
-        message: "Get category",
+        message: "delete product success",
         statusCode: 200,
-        data: findCategory,
       });
     } catch (err) {
-      console.log(err);
       console.log(err);
       this.handleError({
         message: "Server Error",
@@ -494,3 +436,4 @@ class productService extends Service {
   };
 }
 module.exports = productService;
+
