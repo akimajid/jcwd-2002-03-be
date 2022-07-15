@@ -434,6 +434,46 @@ class productService extends Service {
       return this.handleError({});
     }
   };
+  static getProductById = async (req) => {
+    try {
+      const { id } = req.params;
+      const findProduct = await Product.findByPk(id, {
+        include: [
+          {
+            model: Product_image,
+            attributes: ["image_url"],
+          },
+          {
+            model: Inventory,
+            include: [
+              {
+                model: Admin,
+              },
+              {
+                model: Product,
+                include: Stock_opname,
+              },
+            ],
+          },
+          {
+            model: Stock_opname,
+            attributes: ["amount"],
+          },
+        ],
+      });
+      return this.handleSuccess({
+        message: "Product found successfully",
+        statusCode: 200,
+        data: findProduct,
+      });
+    } catch (err) {
+      console.log(err);
+      this.handleError({
+        message: "Server Error",
+        statusCode: 500,
+      });
+    }
+  };
 }
 module.exports = productService;
 
